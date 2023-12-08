@@ -1,6 +1,7 @@
 package twitterscraper
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -11,7 +12,7 @@ import (
 // Global cache for user IDs
 var cacheIDs sync.Map
 
-// Profile of twitter user.
+// Profile of Twitter user.
 type Profile struct {
 	Avatar         string
 	Banner         string
@@ -48,9 +49,9 @@ type user struct {
 }
 
 // GetProfile return parsed user profile.
-func (s *Scraper) GetProfile(username string) (Profile, error) {
+func (s *Scraper) GetProfile(ctx context.Context, username string) (Profile, error) {
 	var jsn user
-	req, err := http.NewRequest("GET", "https://api.twitter.com/graphql/4S2ihIKfF3xhp-ENxvUAfQ/UserByScreenName", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://api.twitter.com/graphql/4S2ihIKfF3xhp-ENxvUAfQ/UserByScreenName", nil)
 	if err != nil {
 		return Profile{}, err
 	}
@@ -64,7 +65,7 @@ func (s *Scraper) GetProfile(username string) (Profile, error) {
 	query.Set("variables", mapToJSONString(variables))
 	req.URL.RawQuery = query.Encode()
 
-	err = s.RequestAPI(req, &jsn)
+	err = s.RequestAPI(ctx, req, &jsn)
 	if err != nil {
 		return Profile{}, err
 	}
@@ -86,13 +87,13 @@ func (s *Scraper) GetProfile(username string) (Profile, error) {
 }
 
 // GetUserIDByScreenName from API
-func (s *Scraper) GetUserIDByScreenName(screenName string) (string, error) {
+func (s *Scraper) GetUserIDByScreenName(ctx context.Context, screenName string) (string, error) {
 	id, ok := cacheIDs.Load(screenName)
 	if ok {
 		return id.(string), nil
 	}
 
-	profile, err := s.GetProfile(screenName)
+	profile, err := s.GetProfile(ctx, screenName)
 	if err != nil {
 		return "", err
 	}

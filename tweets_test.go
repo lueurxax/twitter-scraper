@@ -7,7 +7,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	twitterscraper "github.com/n0madic/twitter-scraper"
+
+	twitterscraper "github.com/lueurxax/twitter-scraper"
 )
 
 var cmpOptions = cmp.Options{
@@ -20,8 +21,11 @@ func TestGetTweets(t *testing.T) {
 	count := 0
 	maxTweetsNbr := 300
 	dupcheck := make(map[string]bool)
+
+	ctx := context.Background()
+
 	scraper := twitterscraper.New()
-	err := scraper.LoginOpenAccount()
+	err := scraper.LoginOpenAccount(ctx)
 	if err != nil {
 		t.Fatalf("LoginOpenAccount() error = %v", err)
 	}
@@ -76,7 +80,8 @@ func TestGetTweets(t *testing.T) {
 }
 
 func assertGetTweet(t *testing.T, expectedTweet *twitterscraper.Tweet) {
-	actualTweet, err := testScraper.GetTweet(expectedTweet.ID)
+	ctx := context.Background()
+	actualTweet, err := testScraper.GetTweet(ctx, expectedTweet.ID)
 	if err != nil {
 		t.Error(err)
 	} else if diff := cmp.Diff(expectedTweet, actualTweet, cmpOptions...); diff != "" {
@@ -186,7 +191,8 @@ func TestTweetMentions(t *testing.T) {
 		Username: "davidmcraney",
 		Name:     "David McRaney",
 	}}
-	tweet, err := testScraper.GetTweet("1554522888904101890")
+	ctx := context.Background()
+	tweet, err := testScraper.GetTweet(ctx, "1554522888904101890")
 	if err != nil {
 		t.Error(err)
 	} else {
@@ -217,7 +223,8 @@ func TestQuotedAndReply(t *testing.T) {
 		UserID:     "978944851",
 		Username:   "VsauceTwo",
 	}
-	tweet, err := testScraper.GetTweet("1237110897597976576")
+	ctx := context.Background()
+	tweet, err := testScraper.GetTweet(ctx, "1237110897597976576")
 	if err != nil {
 		t.Error(err)
 	} else {
@@ -228,7 +235,7 @@ func TestQuotedAndReply(t *testing.T) {
 			t.Error("Resulting quote does not match the sample", diff)
 		}
 	}
-	tweet, err = testScraper.GetTweet("1237111868445134850")
+	tweet, err = testScraper.GetTweet(ctx, "1237111868445134850")
 	if err != nil {
 		t.Error(err)
 	} else {
@@ -258,7 +265,9 @@ func TestRetweet(t *testing.T) {
 		UserID:         "773578328498372608",
 		Username:       "TwitterTogether",
 	}
-	tweet, err := testScraper.GetTweet("1362849141248974853")
+	ctx := context.Background()
+
+	tweet, err := testScraper.GetTweet(ctx, "1362849141248974853")
 	if err != nil {
 		t.Error(err)
 	} else {
@@ -287,7 +296,10 @@ func TestTweetViews(t *testing.T) {
 		Username:     "TwitterSupport",
 		Views:        3189278,
 	}
-	tweet, err := testScraper.GetTweet("1606055187348688896")
+
+	ctx := context.Background()
+
+	tweet, err := testScraper.GetTweet(ctx, "1606055187348688896")
 	if err != nil {
 		t.Error(err)
 	} else {
@@ -301,7 +313,10 @@ func TestTweetThread(t *testing.T) {
 	if skipAuthTest {
 		t.Skip("Skipping test due to environment variable")
 	}
-	tweet, err := testScraper.GetTweet("1665602315745673217")
+
+	ctx := context.Background()
+
+	tweet, err := testScraper.GetTweet(ctx, "1665602315745673217")
 	if err != nil {
 		t.Fatal(err)
 	} else {

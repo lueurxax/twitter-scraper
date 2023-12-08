@@ -2,7 +2,6 @@ package twitterscraper
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -10,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 var (
@@ -19,8 +20,8 @@ var (
 	twURL        = urlParse("https://twitter.com")
 )
 
-func (s *Scraper) newRequest(method string, url string) (*http.Request, error) {
-	req, err := http.NewRequest(method, url, nil)
+func (s *Scraper) NewRequestWithContext(ctx context.Context, method string, url string) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(ctx, method, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +77,7 @@ func getUserTimeline(ctx context.Context, query string, maxProfilesNbr int, fetc
 			default:
 			}
 
-			profiles, next, err := fetchFunc(query, maxProfilesNbr, nextCursor)
+			profiles, next, err := fetchFunc(ctx, query, maxProfilesNbr, nextCursor)
 			if err != nil {
 				channel <- &ProfileResult{Error: err}
 				return
@@ -121,7 +122,7 @@ func getTweetTimeline(ctx context.Context, query string, maxTweetsNbr int, fetch
 			default:
 			}
 
-			tweets, next, err := fetchFunc(query, maxTweetsNbr, nextCursor)
+			tweets, next, err := fetchFunc(ctx, query, maxTweetsNbr, nextCursor)
 			if err != nil {
 				channel <- &TweetResult{Error: err}
 				return
@@ -369,7 +370,7 @@ func parseProfile(user legacyUser) Profile {
 }
 
 func mapToJSONString(data map[string]interface{}) string {
-	jsonBytes, err := json.Marshal(data)
+	jsonBytes, err := jsoniter.Marshal(data)
 	if err != nil {
 		return ""
 	}

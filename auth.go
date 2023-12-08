@@ -2,10 +2,10 @@ package twitterscraper
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/json-iterator/go"
 )
 
 const (
@@ -50,8 +52,8 @@ type (
 	}
 )
 
-func (s *Scraper) getAccessToken(consumerKey, consumerSecret string) (string, error) {
-	req, err := http.NewRequest("POST", oAuthURL, strings.NewReader("grant_type=client_credentials"))
+func (s *Scraper) getAccessToken(ctx context.Context, consumerKey, consumerSecret string) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, "POST", oAuthURL, strings.NewReader("grant_type=client_credentials"))
 	if err != nil {
 		return "", err
 	}
@@ -72,13 +74,13 @@ func (s *Scraper) getAccessToken(consumerKey, consumerSecret string) (string, er
 	var a struct {
 		AccessToken string `json:"access_token"`
 	}
-	if err := json.NewDecoder(res.Body).Decode(&a); err != nil {
+	if err := jsoniter.NewDecoder(res.Body).Decode(&a); err != nil {
 		return "", err
 	}
 	return a.AccessToken, nil
 }
 
-func (s *Scraper) getFlow(data map[string]interface{}) (*flow, error) {
+func (s *Scraper) getFlow(ctx context.Context, data map[string]interface{}) (*flow, error) {
 	headers := http.Header{
 		"Authorization":             []string{"Bearer " + s.bearerToken},
 		"Content-Type":              []string{"application/json"},
@@ -89,11 +91,11 @@ func (s *Scraper) getFlow(data map[string]interface{}) (*flow, error) {
 		"X-Twitter-Client-Language": []string{"en"},
 	}
 
-	jsonData, err := json.Marshal(data)
+	jsonData, err := jsoniter.Marshal(data)
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest("POST", loginURL, bytes.NewReader(jsonData))
+	req, err := http.NewRequestWithContext(ctx, "POST", loginURL, bytes.NewReader(jsonData))
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +108,7 @@ func (s *Scraper) getFlow(data map[string]interface{}) (*flow, error) {
 	defer resp.Body.Close()
 
 	var info flow
-	err = json.NewDecoder(resp.Body).Decode(&info)
+	err = jsoniter.NewDecoder(resp.Body).Decode(&info)
 	if err != nil {
 		return nil, err
 	}
@@ -114,8 +116,8 @@ func (s *Scraper) getFlow(data map[string]interface{}) (*flow, error) {
 	return &info, nil
 }
 
-func (s *Scraper) getFlowToken(data map[string]interface{}) (string, error) {
-	info, err := s.getFlow(data)
+func (s *Scraper) getFlowToken(ctx context.Context, data map[string]interface{}) (string, error) {
+	info, err := s.getFlow(ctx, data)
 	if err != nil {
 		return "", err
 	}
@@ -140,15 +142,15 @@ func (s *Scraper) getFlowToken(data map[string]interface{}) (string, error) {
 }
 
 // IsLoggedIn check if scraper logged in
-func (s *Scraper) IsLoggedIn() bool {
+func (s *Scraper) IsLoggedIn(ctx context.Context) bool {
 	s.isLogged = true
 	s.setBearerToken(bearerToken2)
-	req, err := http.NewRequest("GET", "https://api.twitter.com/1.1/account/verify_credentials.json", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://api.twitter.com/1.1/account/verify_credentials.json", nil)
 	if err != nil {
 		return false
 	}
 	var verify verifyCredentials
-	err = s.RequestAPI(req, &verify)
+	err = s.RequestAPI(ctx, req, &verify)
 	if err != nil || verify.Errors != nil {
 		s.isLogged = false
 		s.setBearerToken(bearerToken)
@@ -162,7 +164,7 @@ func (s *Scraper) IsLoggedIn() bool {
 // Use Login(username, password) for ordinary login
 // or Login(username, password, email) for login if you have email confirmation
 // or Login(username, password, code_for_2FA) for login if you have two-factor authentication
-func (s *Scraper) Login(credentials ...string) error {
+func (s *Scraper) Login(ctx context.Context, credentials ...string) error {
 	var username, password, confirmation string
 	if len(credentials) < 2 || len(credentials) > 3 {
 		return fmt.Errorf("invalid credentials")
@@ -175,7 +177,7 @@ func (s *Scraper) Login(credentials ...string) error {
 
 	s.setBearerToken(bearerToken2)
 
-	err := s.GetGuestToken()
+	err := s.GetGuestToken(ctx)
 	if err != nil {
 		return err
 	}
@@ -190,7 +192,7 @@ func (s *Scraper) Login(credentials ...string) error {
 			},
 		},
 	}
-	flowToken, err := s.getFlowToken(data)
+	flowToken, err := s.getFlowToken(ctx, data)
 	if err != nil {
 		return err
 	}
@@ -205,7 +207,7 @@ func (s *Scraper) Login(credentials ...string) error {
 			},
 		},
 	}
-	flowToken, err = s.getFlowToken(data)
+	flowToken, err = s.getFlowToken(ctx, data)
 	if err != nil {
 		return err
 	}
@@ -228,7 +230,7 @@ func (s *Scraper) Login(credentials ...string) error {
 			},
 		},
 	}
-	flowToken, err = s.getFlowToken(data)
+	flowToken, err = s.getFlowToken(ctx, data)
 	if err != nil {
 		return err
 	}
@@ -243,7 +245,7 @@ func (s *Scraper) Login(credentials ...string) error {
 			},
 		},
 	}
-	flowToken, err = s.getFlowToken(data)
+	flowToken, err = s.getFlowToken(ctx, data)
 	if err != nil {
 		return err
 	}
@@ -258,7 +260,7 @@ func (s *Scraper) Login(credentials ...string) error {
 			},
 		},
 	}
-	flowToken, err = s.getFlowToken(data)
+	flowToken, err = s.getFlowToken(ctx, data)
 	if err != nil {
 		var confirmationSubtask string
 		for _, subtask := range []string{"LoginAcid", "LoginTwoFactorAuthChallenge"} {
@@ -281,7 +283,7 @@ func (s *Scraper) Login(credentials ...string) error {
 					},
 				},
 			}
-			_, err = s.getFlowToken(data)
+			_, err = s.getFlowToken(ctx, data)
 			if err != nil {
 				return err
 			}
@@ -296,14 +298,14 @@ func (s *Scraper) Login(credentials ...string) error {
 }
 
 // LoginOpenAccount as Twitter app
-func (s *Scraper) LoginOpenAccount() error {
-	accessToken, err := s.getAccessToken(appConsumerKey, appConsumerSecret)
+func (s *Scraper) LoginOpenAccount(ctx context.Context) error {
+	accessToken, err := s.getAccessToken(ctx, appConsumerKey, appConsumerSecret)
 	if err != nil {
 		return err
 	}
 	s.setBearerToken(accessToken)
 
-	err = s.GetGuestToken()
+	err = s.GetGuestToken(ctx)
 	if err != nil {
 		return err
 	}
@@ -318,7 +320,7 @@ func (s *Scraper) LoginOpenAccount() error {
 			},
 		},
 	}
-	flowToken, err := s.getFlowToken(data)
+	flowToken, err := s.getFlowToken(ctx, data)
 	if err != nil {
 		return err
 	}
@@ -332,7 +334,7 @@ func (s *Scraper) LoginOpenAccount() error {
 			},
 		},
 	}
-	info, err := s.getFlow(data)
+	info, err := s.getFlow(ctx, data)
 	if err != nil {
 		return err
 	}
@@ -353,12 +355,12 @@ func (s *Scraper) LoginOpenAccount() error {
 }
 
 // Logout is reset session
-func (s *Scraper) Logout() error {
-	req, err := http.NewRequest("POST", logoutURL, nil)
+func (s *Scraper) Logout(ctx context.Context) error {
+	req, err := http.NewRequestWithContext(ctx, "POST", logoutURL, nil)
 	if err != nil {
 		return err
 	}
-	err = s.RequestAPI(req, nil)
+	err = s.RequestAPI(ctx, req, nil)
 	if err != nil {
 		return err
 	}

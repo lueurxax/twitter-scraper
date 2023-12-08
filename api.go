@@ -1,17 +1,19 @@
 package twitterscraper
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 const bearerToken string = "AAAAAAAAAAAAAAAAAAAAAPYXBAAAAAAACLXUNDekMxqa8h%2F40K4moUkGsoc%3DTYfbDKbT3jJPCEVnMYqilB28NHfOPqkca3qaAxGfsyKCs0wRbw"
 
 // RequestAPI get JSON from frontend API and decodes it
-func (s *Scraper) RequestAPI(req *http.Request, target interface{}) error {
+func (s *Scraper) RequestAPI(ctx context.Context, req *http.Request, target interface{}) error {
 	s.wg.Wait()
 	if s.delay > 0 {
 		defer func() {
@@ -25,7 +27,7 @@ func (s *Scraper) RequestAPI(req *http.Request, target interface{}) error {
 
 	if !s.isLogged {
 		if !s.IsGuestToken() || s.guestCreatedAt.Before(time.Now().Add(-time.Hour*3)) {
-			err := s.GetGuestToken()
+			err := s.GetGuestToken(ctx)
 			if err != nil {
 				return err
 			}
@@ -68,12 +70,12 @@ func (s *Scraper) RequestAPI(req *http.Request, target interface{}) error {
 	if target == nil {
 		return nil
 	}
-	return json.Unmarshal(content, target)
+	return jsoniter.Unmarshal(content, target)
 }
 
 // GetGuestToken from Twitter API
-func (s *Scraper) GetGuestToken() error {
-	req, err := http.NewRequest("POST", "https://api.twitter.com/1.1/guest/activate.json", nil)
+func (s *Scraper) GetGuestToken(ctx context.Context) error {
+	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.twitter.com/1.1/guest/activate.json", nil)
 	if err != nil {
 		return err
 	}
@@ -94,7 +96,7 @@ func (s *Scraper) GetGuestToken() error {
 	}
 
 	var jsn map[string]interface{}
-	if err := json.Unmarshal(body, &jsn); err != nil {
+	if err = jsoniter.Unmarshal(body, &jsn); err != nil {
 		return err
 	}
 	var ok bool

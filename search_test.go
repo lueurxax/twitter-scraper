@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	twitterscraper "github.com/n0madic/twitter-scraper"
+	twitterscraper "github.com/lueurxax/twitter-scraper"
 )
 
 func TestFetchSearchCursor(t *testing.T) {
@@ -12,11 +12,13 @@ func TestFetchSearchCursor(t *testing.T) {
 		t.Skip("Skipping test due to environment variable")
 	}
 
+	ctx := context.Background()
+
 	maxTweetsNbr := 150
 	tweetsNbr := 0
 	nextCursor := ""
 	for tweetsNbr < maxTweetsNbr {
-		tweets, cursor, err := testScraper.FetchSearchTweets("twitter", maxTweetsNbr, nextCursor)
+		tweets, cursor, err := testScraper.FetchSearchTweets(ctx, "twitter", maxTweetsNbr, nextCursor)
 		if err != nil {
 			t.Fatal(err)
 		}

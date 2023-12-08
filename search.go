@@ -88,7 +88,7 @@ func (s *Scraper) SearchProfiles(ctx context.Context, query string, maxProfilesN
 }
 
 // getSearchTimeline gets results for a given search query, via the Twitter frontend API
-func (s *Scraper) getSearchTimeline(query string, maxNbr int, cursor string) (*searchTimeline, error) {
+func (s *Scraper) getSearchTimeline(ctx context.Context, query string, maxNbr int, cursor string) (*searchTimeline, error) {
 	if !s.isLogged {
 		return nil, errors.New("scraper is not logged in for search")
 	}
@@ -97,7 +97,7 @@ func (s *Scraper) getSearchTimeline(query string, maxNbr int, cursor string) (*s
 		maxNbr = 50
 	}
 
-	req, err := s.newRequest("GET", searchURL)
+	req, err := s.NewRequestWithContext(ctx, "GET", searchURL)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func (s *Scraper) getSearchTimeline(query string, maxNbr int, cursor string) (*s
 	req.URL.RawQuery = q.Encode()
 
 	var timeline searchTimeline
-	err = s.RequestAPI(req, &timeline)
+	err = s.RequestAPI(ctx, req, &timeline)
 	if err != nil {
 		return nil, err
 	}
@@ -165,8 +165,8 @@ func (s *Scraper) getSearchTimeline(query string, maxNbr int, cursor string) (*s
 }
 
 // FetchSearchTweets gets tweets for a given search query, via the Twitter frontend API
-func (s *Scraper) FetchSearchTweets(query string, maxTweetsNbr int, cursor string) ([]*Tweet, string, error) {
-	timeline, err := s.getSearchTimeline(query, maxTweetsNbr, cursor)
+func (s *Scraper) FetchSearchTweets(ctx context.Context, query string, maxTweetsNbr int, cursor string) ([]*Tweet, string, error) {
+	timeline, err := s.getSearchTimeline(ctx, query, maxTweetsNbr, cursor)
 	if err != nil {
 		return nil, "", err
 	}
@@ -175,8 +175,8 @@ func (s *Scraper) FetchSearchTweets(query string, maxTweetsNbr int, cursor strin
 }
 
 // FetchSearchProfiles gets users for a given search query, via the Twitter frontend API
-func (s *Scraper) FetchSearchProfiles(query string, maxProfilesNbr int, cursor string) ([]*Profile, string, error) {
-	timeline, err := s.getSearchTimeline(query, maxProfilesNbr, cursor)
+func (s *Scraper) FetchSearchProfiles(ctx context.Context, query string, maxProfilesNbr int, cursor string) ([]*Profile, string, error) {
+	timeline, err := s.getSearchTimeline(ctx, query, maxProfilesNbr, cursor)
 	if err != nil {
 		return nil, "", err
 	}

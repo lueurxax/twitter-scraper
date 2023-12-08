@@ -1,14 +1,15 @@
 package twitterscraper_test
 
 import (
+	"context"
 	"testing"
 
-	twitterscraper "github.com/n0madic/twitter-scraper"
+	twitterscraper "github.com/lueurxax/twitter-scraper"
 )
 
 func TestGetGuestToken(t *testing.T) {
 	scraper := twitterscraper.New()
-	if err := scraper.GetGuestToken(); err != nil {
+	if err := scraper.GetGuestToken(context.Background()); err != nil {
 		t.Errorf("getGuestToken() error = %v", err)
 	}
 	if !scraper.IsGuestToken() {

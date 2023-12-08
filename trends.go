@@ -1,10 +1,13 @@
 package twitterscraper
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 // GetTrends return list of trends.
-func (s *Scraper) GetTrends() ([]string, error) {
-	req, err := s.newRequest("GET", "https://api.twitter.com/2/guide.json")
+func (s *Scraper) GetTrends(ctx context.Context) ([]string, error) {
+	req, err := s.NewRequestWithContext(ctx, "GET", "https://api.twitter.com/2/guide.json")
 	if err != nil {
 		return nil, err
 	}
@@ -21,7 +24,7 @@ func (s *Scraper) GetTrends() ([]string, error) {
 	if curBearerToken != bearerToken2 {
 		s.setBearerToken(bearerToken2)
 	}
-	err = s.RequestAPI(req, &jsn)
+	err = s.RequestAPI(ctx, req, &jsn)
 	if curBearerToken != bearerToken2 {
 		s.setBearerToken(curBearerToken)
 	}

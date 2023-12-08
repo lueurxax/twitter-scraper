@@ -13,25 +13,25 @@ func (s *Scraper) GetTweets(ctx context.Context, user string, maxTweetsNbr int) 
 }
 
 // FetchTweets gets tweets for a given user, via the Twitter frontend API.
-func (s *Scraper) FetchTweets(user string, maxTweetsNbr int, cursor string) ([]*Tweet, string, error) {
-	userID, err := s.GetUserIDByScreenName(user)
+func (s *Scraper) FetchTweets(ctx context.Context, user string, maxTweetsNbr int, cursor string) ([]*Tweet, string, error) {
+	userID, err := s.GetUserIDByScreenName(ctx, user)
 	if err != nil {
 		return nil, "", err
 	}
 
 	if s.isOpenAccount {
-		return s.FetchTweetsByUserIDLegacy(userID, maxTweetsNbr, cursor)
+		return s.FetchTweetsByUserIDLegacy(ctx, userID, maxTweetsNbr, cursor)
 	}
-	return s.FetchTweetsByUserID(userID, maxTweetsNbr, cursor)
+	return s.FetchTweetsByUserID(ctx, userID, maxTweetsNbr, cursor)
 }
 
 // FetchTweetsByUserID gets tweets for a given userID, via the Twitter frontend GraphQL API.
-func (s *Scraper) FetchTweetsByUserID(userID string, maxTweetsNbr int, cursor string) ([]*Tweet, string, error) {
+func (s *Scraper) FetchTweetsByUserID(ctx context.Context, userID string, maxTweetsNbr int, cursor string) ([]*Tweet, string, error) {
 	if maxTweetsNbr > 200 {
 		maxTweetsNbr = 200
 	}
 
-	req, err := s.newRequest("GET", "https://twitter.com/i/api/graphql/UGi7tjRPr-d_U3bCPIko5Q/UserTweets")
+	req, err := s.NewRequestWithContext(ctx, "GET", "https://twitter.com/i/api/graphql/UGi7tjRPr-d_U3bCPIko5Q/UserTweets")
 	if err != nil {
 		return nil, "", err
 	}
@@ -78,7 +78,7 @@ func (s *Scraper) FetchTweetsByUserID(userID string, maxTweetsNbr int, cursor st
 	req.URL.RawQuery = query.Encode()
 
 	var timeline timelineV2
-	err = s.RequestAPI(req, &timeline)
+	err = s.RequestAPI(ctx, req, &timeline)
 	if err != nil {
 		return nil, "", err
 	}
@@ -88,12 +88,12 @@ func (s *Scraper) FetchTweetsByUserID(userID string, maxTweetsNbr int, cursor st
 }
 
 // FetchTweetsByUserIDLegacy gets tweets for a given userID, via the Twitter frontend legacy API.
-func (s *Scraper) FetchTweetsByUserIDLegacy(userID string, maxTweetsNbr int, cursor string) ([]*Tweet, string, error) {
+func (s *Scraper) FetchTweetsByUserIDLegacy(ctx context.Context, userID string, maxTweetsNbr int, cursor string) ([]*Tweet, string, error) {
 	if maxTweetsNbr > 200 {
 		maxTweetsNbr = 200
 	}
 
-	req, err := s.newRequest("GET", "https://api.twitter.com/2/timeline/profile/"+userID+".json")
+	req, err := s.NewRequestWithContext(ctx, "GET", "https://api.twitter.com/2/timeline/profile/"+userID+".json")
 	if err != nil {
 		return nil, "", err
 	}
@@ -107,7 +107,7 @@ func (s *Scraper) FetchTweetsByUserIDLegacy(userID string, maxTweetsNbr int, cur
 	req.URL.RawQuery = q.Encode()
 
 	var timeline timelineV1
-	err = s.RequestAPI(req, &timeline)
+	err = s.RequestAPI(ctx, req, &timeline)
 	if err != nil {
 		return nil, "", err
 	}
@@ -117,15 +117,15 @@ func (s *Scraper) FetchTweetsByUserIDLegacy(userID string, maxTweetsNbr int, cur
 }
 
 // GetTweet get a single tweet by ID.
-func (s *Scraper) GetTweet(id string) (*Tweet, error) {
+func (s *Scraper) GetTweet(ctx context.Context, id string) (*Tweet, error) {
 	if s.isOpenAccount {
-		req, err := s.newRequest("GET", "https://api.twitter.com/2/timeline/conversation/"+id+".json")
+		req, err := s.NewRequestWithContext(ctx, "GET", "https://api.twitter.com/2/timeline/conversation/"+id+".json")
 		if err != nil {
 			return nil, err
 		}
 
 		var timeline timelineV1
-		err = s.RequestAPI(req, &timeline)
+		err = s.RequestAPI(ctx, req, &timeline)
 		if err != nil {
 			return nil, err
 		}
@@ -137,7 +137,7 @@ func (s *Scraper) GetTweet(id string) (*Tweet, error) {
 			}
 		}
 	} else {
-		req, err := s.newRequest("GET", "https://twitter.com/i/api/graphql/VWFGPVAGkZMGRKGe3GFFnA/TweetDetail")
+		req, err := s.NewRequestWithContext(ctx, "GET", "https://twitter.com/i/api/graphql/VWFGPVAGkZMGRKGe3GFFnA/TweetDetail")
 		if err != nil {
 			return nil, err
 		}
@@ -189,7 +189,7 @@ func (s *Scraper) GetTweet(id string) (*Tweet, error) {
 			s.setBearerToken(bearerToken2)
 		}
 
-		err = s.RequestAPI(req, &conversation)
+		err = s.RequestAPI(ctx, req, &conversation)
 
 		if curBearerToken != bearerToken2 {
 			s.setBearerToken(curBearerToken)

@@ -1,6 +1,9 @@
 package twitterscraper
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type (
 	// Mention type.
@@ -183,6 +186,6 @@ type (
 		} `json:"bounding_box"`
 	}
 
-	fetchProfileFunc func(query string, maxProfilesNbr int, cursor string) ([]*Profile, string, error)
-	fetchTweetFunc   func(query string, maxTweetsNbr int, cursor string) ([]*Tweet, string, error)
+	fetchProfileFunc func(ctx context.Context, query string, maxProfilesNbr int, cursor string) ([]*Profile, string, error)
+	fetchTweetFunc   func(ctx context.Context, query string, maxTweetsNbr int, cursor string) ([]*Tweet, string, error)
 )
