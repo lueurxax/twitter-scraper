@@ -2,7 +2,7 @@ package twitterscraper
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io"
 	"net/http"
 	"time"
@@ -54,13 +54,18 @@ func (s *Scraper) RequestAPI(ctx context.Context, req *http.Request, target inte
 	}
 	defer resp.Body.Close()
 
-	content, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("response status %s: %s", resp.Status, content)
+		content, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+
+		switch resp.StatusCode {
+		case http.StatusTooManyRequests:
+			return ErrRateLimitExceeded{description: content}
+		default:
+			return ErrOther{description: content, status: resp.Status, StatusCode: resp.StatusCode}
+		}
 	}
 
 	if resp.Header.Get("X-Rate-Limit-Remaining") == "0" {
@@ -70,7 +75,7 @@ func (s *Scraper) RequestAPI(ctx context.Context, req *http.Request, target inte
 	if target == nil {
 		return nil
 	}
-	return jsoniter.Unmarshal(content, target)
+	return jsoniter.NewDecoder(resp.Body).Decode(target)
 }
 
 // GetGuestToken from Twitter API
@@ -87,21 +92,27 @@ func (s *Scraper) GetGuestToken(ctx context.Context) error {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("response status %s: %s", resp.Status, body)
+		content, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+
+		switch resp.StatusCode {
+		case http.StatusTooManyRequests:
+			return ErrRateLimitExceeded{description: content}
+		default:
+			return ErrOther{description: content, status: resp.Status, StatusCode: resp.StatusCode}
+		}
 	}
 
 	var jsn map[string]interface{}
-	if err = jsoniter.Unmarshal(body, &jsn); err != nil {
-		return err
+	if err = jsoniter.NewDecoder(resp.Body).Decode(&jsn); err != nil {
+		return errors.Join(err, ErrDecodeGuestTokenResponse)
 	}
 	var ok bool
 	if s.guestToken, ok = jsn["guest_token"].(string); !ok {
-		return fmt.Errorf("guest_token not found")
+		return ErrGuestTokenNotFound
 	}
 	s.guestCreatedAt = time.Now()
 
