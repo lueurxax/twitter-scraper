@@ -27,8 +27,10 @@ type Scraper struct {
 	oAuthToken     string
 	oAuthSecret    string
 	proxy          string
-	searchMode     SearchMode
-	wg             sync.WaitGroup
+	userAgent      *string
+
+	searchMode SearchMode
+	wg         sync.WaitGroup
 }
 
 // SearchMode type
@@ -159,4 +161,8 @@ func (s *Scraper) SetProxy(proxyAddr string) error {
 		return nil
 	}
 	return errors.New("only support http(s) or socks5 protocol")
+}
+
+func (s *Scraper) SetUserAgent(userAgent string) {
+	s.userAgent = &userAgent
 }

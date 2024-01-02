@@ -17,6 +17,9 @@ func TestFetchSearchCursor(t *testing.T) {
 	maxTweetsNbr := 150
 	tweetsNbr := 0
 	nextCursor := ""
+
+	testScraper.SetUserAgent("TwitterAndroid/99")
+
 	for tweetsNbr < maxTweetsNbr {
 		tweets, cursor, err := testScraper.FetchSearchTweets(ctx, "twitter", maxTweetsNbr, nextCursor)
 		if err != nil {

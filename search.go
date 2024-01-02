@@ -93,8 +93,8 @@ func (s *Scraper) getSearchTimeline(ctx context.Context, query string, maxNbr in
 		return nil, errors.New("scraper is not logged in for search")
 	}
 
-	if maxNbr > 50 {
-		maxNbr = 50
+	if maxNbr > 20 {
+		maxNbr = 20
 	}
 
 	req, err := s.NewRequestWithContext(ctx, "GET", searchURL)

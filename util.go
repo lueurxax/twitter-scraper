@@ -370,11 +370,11 @@ func parseProfile(user legacyUser) Profile {
 }
 
 func mapToJSONString(data map[string]interface{}) string {
-	jsonBytes, err := jsoniter.Marshal(data)
+	jsonBytes, err := jsoniter.MarshalToString(data)
 	if err != nil {
 		return ""
 	}
-	return string(jsonBytes)
+	return jsonBytes
 }
 
 func stringInSlice(a string, list []string) bool {
