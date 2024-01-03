@@ -55,7 +55,7 @@ func (s *Scraper) RequestAPI(ctx context.Context, req *http.Request, target inte
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return err
+		return errors.Join(err, fmt.Errorf("error while requesting API with proxy %s", s.proxy))
 	}
 	defer resp.Body.Close()
 
