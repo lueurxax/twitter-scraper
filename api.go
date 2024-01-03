@@ -3,6 +3,7 @@ package twitterscraper
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -92,7 +93,7 @@ func (s *Scraper) GetGuestToken(ctx context.Context) error {
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return err
+		return errors.Join(err, fmt.Errorf("error while getting guest token with proxy %s", s.proxy))
 	}
 	defer resp.Body.Close()
 
