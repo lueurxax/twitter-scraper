@@ -117,13 +117,20 @@ func (s *Scraper) SetProxy(proxyAddr string) error {
 		if err != nil {
 			return err
 		}
-		s.client.Transport = &http.Transport{
-			Proxy:        http.ProxyURL(urlproxy),
-			TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
+		transport := &http.Transport{
+			Proxy: http.ProxyURL(urlproxy),
 			DialContext: (&net.Dialer{
-				Timeout: s.client.Timeout,
+				Timeout:   s.client.Timeout,
+				KeepAlive: 30 * time.Second,
 			}).DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			TLSNextProto:          make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
 		}
+		s.client.Transport = transport
 		s.proxy = proxyAddr
 		return nil
 	}

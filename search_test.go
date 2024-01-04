@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	twitterscraper "github.com/lueurxax/twitter-scraper"
 )
 
@@ -22,9 +24,7 @@ func TestFetchSearchCursor(t *testing.T) {
 
 	for tweetsNbr < maxTweetsNbr {
 		tweets, cursor, err := testScraper.FetchSearchTweets(ctx, "twitter", maxTweetsNbr, nextCursor)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		if cursor == "" {
 			t.Fatal("Expected search cursor is empty")
 		}
